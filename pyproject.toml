@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "srmlib.gpiocontrollers"
+version = "0.0.1"
+authors = [
+    { name = "kirypto", email = "kirypto@gmail.com" },
+]
+description = "A collection of controllers for interacting with various GPIO devices."
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/SaskatoonRailwayModellers/SRMLib-GPIOControllers"
+"Bug Tracker" = "https://github.com/SaskatoonRailwayModellers/SRMLib-GPIOControllers/issues"
