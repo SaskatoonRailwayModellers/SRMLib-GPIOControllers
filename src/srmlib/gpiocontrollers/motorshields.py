@@ -1,19 +1,13 @@
 """
-Controllers for Cytron Technologies devices
-
 Useful Links:
 - RPi.GPIO PWM: https://sourceforge.net/p/raspberry-gpio-python/wiki/PWM/
 """
 
 from RPi.GPIO import setup, OUT, LOW, PWM, getmode, BOARD, output
 
+from srmlib.gpiocontrollers.constants import FORWARD, BACKWARD, Direction
 
-_FORWARD = 0
-_BACKWARD = 1
-_VALID_DIRECTIONS = {_FORWARD, _BACKWARD}
-# class _Direction(IntEnum):
-#     Forward: 0
-#     Backward: 1
+_VALID_DIRECTIONS = {FORWARD, BACKWARD}
 
 
 class CytronMD10C:
@@ -26,7 +20,7 @@ class CytronMD10C:
     _speed: float
     _pwm: PWM
     _direction_pin: int
-    _direction: int
+    _direction: Direction
 
     def __init__(self, direction_pin: int, pulse_width_modulation_pin: int) -> None:
         if getmode() != BOARD:
@@ -47,19 +41,19 @@ class CytronMD10C:
         return self._speed
 
     @speed.setter
-    def speed(self, value: float) -> None:
-        if not (0 <= value <= 100):
-            raise ValueError(f"speed must be a percentage from 0 to 100 inclusive, was {value}")
-        self._speed = value
+    def speed(self, speed_: float) -> None:
+        if not (0 <= speed_ <= 100):
+            raise ValueError(f"speed must be a percentage from 0 to 100 inclusive, was {speed_}")
+        self._speed = speed_
         self._pwm.start(self._speed)
 
     @property
-    def direction(self) -> int:
+    def direction(self) -> Direction:
         return self._direction
 
     @direction.setter
-    def direction(self, value: int) -> None:
-        if value not in _VALID_DIRECTIONS:
-            raise ValueError(f"{value} is not a valid direction, must be one of {','.join([str(direction) for direction in _VALID_DIRECTIONS])}")
-        self._direction = value
-        output(self._direction_pin, self._direction)
+    def direction(self, direction_: Direction) -> None:
+        if direction_ not in _VALID_DIRECTIONS:
+            raise ValueError(f"{direction_} is not a valid direction, must be one of {','.join([str(direction) for direction in _VALID_DIRECTIONS])}")
+        self._direction = direction_
+        output(self._direction_pin, 0 if self._direction == FORWARD else 1)  # For GPIO: forward = 0, backward = 1

@@ -3,6 +3,7 @@ from unittest import TestCase
 from RPi.GPIO import setmode, BOARD, cleanup as cleanup_gpio
 
 from srmlib.gpiocontrollers.motorshields import CytronMD10C
+from srmlib.gpiocontrollers.constants import FORWARD, BACKWARD
 
 
 class CytronMD10CTest(TestCase):
@@ -24,7 +25,7 @@ class CytronMD10CTest(TestCase):
         input("Press Enter to run test...")
 
         # Act
-        self.controller.direction = 0
+        self.controller.direction = FORWARD
         self.controller.speed = 50
         sleep(3)
         self.controller.speed = 0
@@ -39,7 +40,7 @@ class CytronMD10CTest(TestCase):
         input("Press Enter to run test...")
 
         # Act
-        self.controller.direction = 1
+        self.controller.direction = BACKWARD
         self.controller.speed = 50
         sleep(3)
         self.controller.speed = 0
@@ -54,7 +55,7 @@ class CytronMD10CTest(TestCase):
         input("Press Enter to run test...")
 
         # Act
-        self.controller.direction = 0
+        self.controller.direction = FORWARD
         self.controller.speed = 20
         sleep(2)
         self.controller.speed = 40
