@@ -2,6 +2,7 @@
 Useful Links:
 - RPi.GPIO PWM: https://sourceforge.net/p/raspberry-gpio-python/wiki/PWM/
 """
+from logging import debug
 
 from RPi.GPIO import setup, OUT, LOW, PWM, getmode, BOARD, output
 
@@ -21,8 +22,9 @@ class CytronMD10C:
     _pwm: PWM
     _direction_pin: int
     _direction: Direction
+    _log_id: str
 
-    def __init__(self, direction_pin: int, pulse_width_modulation_pin: int) -> None:
+    def __init__(self, direction_pin: int, pulse_width_modulation_pin: int, *, logging_identifier: str = None) -> None:
         """
         Construct a controller for a Cytron MD10C motor shield
 
@@ -41,6 +43,8 @@ class CytronMD10C:
         self._speed = 0
         self._pwm = PWM(pulse_width_modulation_pin, 200)
         self._direction_pin = direction_pin
+        self._log_id = f"[{logging_identifier or f'{self.__class__.__name__}-{id(self)}'}]"
+        debug(f"{self._log_id} Initialized with dir={direction_pin};pwm={pulse_width_modulation_pin}")
 
     @property
     def speed(self) -> float:
@@ -62,6 +66,7 @@ class CytronMD10C:
             raise ValueError(f"speed must be a percentage from 0 to 100 inclusive, was {speed_}")
         self._speed = speed_
         self._pwm.start(self._speed)
+        debug(f"{self._log_id} Set speed to {speed_}")
 
     @property
     def direction(self) -> Direction:
@@ -82,4 +87,5 @@ class CytronMD10C:
         if direction_ not in _VALID_DIRECTIONS:
             raise ValueError(f"{direction_} is not a valid direction, must be one of {','.join([str(direction) for direction in _VALID_DIRECTIONS])}")
         self._direction = direction_
+        debug(f"{self._log_id} Set direction to {direction_}")
         output(self._direction_pin, 0 if self._direction == FORWARD else 1)  # For GPIO: forward = 0, backward = 1
