@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from RPi.GPIO import setmode, BOARD, cleanup, remove_event_detect
 
-from srmlib.gpiocontrollers.constants import Direction, FORWARD, BACKWARD
+from srmlib.gpiocontrollers.constants import Direction, FORWARD, BACKWARD, ButtonState, PRESSED, RELEASED
 from srmlib.gpiocontrollers.inputs import RotaryEncoderKY040
 
 
@@ -64,5 +64,47 @@ class RotaryEncoderKY040Test(TestCase):
 
         # Assert
         input("Experiment with rotation, then press enter to continue...\n")
+        test_succeeded = input("Did the controller perform as expected? (Y/n) ").lower() in {"", "y"}
+        self.assertTrue(test_succeeded)
+
+    def test__add_switch_callback__should_register_function_to_track_rotations(self) -> None:
+        # Arrange
+        print("!!! TEST - Expected Observation: Pressing the button should print PRESSED, releasing should "
+              "print RELEASED")
+
+        def handler(state: ButtonState) -> None:
+            state_str = "PRESSED" if state == PRESSED else "RELEASED"
+            print(f"Callback invoked, value: {state_str}")
+
+        # Act
+        self.controller.add_switch_callback(handler)
+
+        # Assert
+        input("Experiment with button, then press enter to continue...\n")
+        test_succeeded = input("Did the controller perform as expected? (Y/n) ").lower() in {"", "y"}
+        self.assertTrue(test_succeeded)
+
+    def test__add_switch_callback__should_register_multiple_functions_to_track_rotations(self) -> None:
+        # Arrange
+        print("!!! TEST - Expected Observation: Pressing the button should print PRESSED, releasing should "
+              "print RELEASED")
+        container = {"pressed": 0, "released": 0}
+
+        def pressed_handler(state: ButtonState) -> None:
+            if state == PRESSED:
+                container["pressed"] += 1
+                print(f"Pressed callback invoked, value: {container['pressed']}")
+
+        def released_handler(state: ButtonState) -> None:
+            if state == RELEASED:
+                container["released"] -= 1
+                print(f"Released callback invoked, value: {container['released']}")
+
+        # Act
+        self.controller.add_switch_callback(pressed_handler)
+        self.controller.add_switch_callback(released_handler)
+
+        # Assert
+        input("Experiment with button, then press enter to continue...\n")
         test_succeeded = input("Did the controller perform as expected? (Y/n) ").lower() in {"", "y"}
         self.assertTrue(test_succeeded)
