@@ -5,6 +5,7 @@ from typing import List, Callable
 from RPi.GPIO import setmode, BOARD, input as gpio_input, add_event_detect, BOTH, setup, IN, PUD_DOWN
 
 from srmlib.gpiocontrollers.constants import PRESSED, RELEASED, ButtonState, FORWARD, BACKWARD, Direction
+from srmlib.gpiocontrollers.util import calculate_percentage, clamp
 
 SwitchCallback = Callable[[ButtonState], None]
 RotationCallback = Callable[[Direction], None]
@@ -106,3 +107,30 @@ class RotaryEncoderKY040:
                 callback(direction)
             except RuntimeError as e:
                 error(f"{self._log_id} Direction callback threw an exception: {e}")
+
+
+class RotaryEncoderPercentageInput(PercentageInput):
+    def __init__(
+            self, rotary_encoder: RotaryEncoderKY040, min_rotary_position: int, max_rotary_position: int,
+            initial_rotary_position: int = 0, *args, **kwargs
+    ) -> None:
+        initial_percent = calculate_percentage(initial_rotary_position, min_rotary_position, max_rotary_position)
+        super(RotaryEncoderPercentageInput, self).__init__(*args, initial_percent=initial_percent, **kwargs)
+        container = {
+            "position": clamp(initial_rotary_position, min_rotary_position, max_rotary_position)
+        }
+
+        def rotary_encoder_rotation_handler(direction: Direction) -> None:
+            current_position = clamp(
+                container["position"] + (1 if direction == FORWARD else -1),
+                min_rotary_position,
+                max_rotary_position
+            )
+            self._current_percent = calculate_percentage(current_position, min_rotary_position, max_rotary_position)
+            container["position"] = current_position
+            self._invoke_all_callbacks()
+
+        rotary_encoder.add_rotation_callback(rotary_encoder_rotation_handler)
+
+    def add_percent_changed_callback(self, callback: Callable[[float], None]) -> None:
+        self._percent_changed_callbacks.append(callback)
