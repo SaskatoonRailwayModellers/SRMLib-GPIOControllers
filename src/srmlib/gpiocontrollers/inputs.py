@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from logging import debug, error
 from typing import List, Callable
 
@@ -7,6 +8,35 @@ from srmlib.gpiocontrollers.constants import PRESSED, RELEASED, ButtonState, FOR
 
 SwitchCallback = Callable[[ButtonState], None]
 RotationCallback = Callable[[Direction], None]
+
+
+class PercentageInput(ABC):
+    _percent_changed_callbacks: List[Callable[[float], None]]
+    _current_percent: float
+    _log_id: str
+
+    def __init__(self, *args, logging_identifier: str = None, initial_percent: float, **kwargs) -> None:
+        super(PercentageInput, self).__init__(*args, **kwargs)
+        self._percent_changed_callbacks = []
+        self._current_percent = initial_percent
+        self._log_id = f"[{logging_identifier or f'{self.__class__.__name__}-{id(self)}'}]"
+
+    @abstractmethod
+    def add_percent_changed_callback(self, callback: Callable[[float], None]) -> None:
+        """
+        Registers a new callback to be invoked whenever the input percentage changes.
+
+        :param callback: A function that accepts the current input as a percentage [0, 100].
+        """
+        pass
+
+    def _invoke_all_callbacks(self) -> None:
+        debug(f"{self._log_id} Rotary position changed, new percent is {self._current_percent}. Invoking callbacks.")
+        for callback in self._percent_changed_callbacks:
+            try:
+                callback(self._current_percent)
+            except RuntimeError as e:
+                error(f"{self._log_id} Switch callback threw an exception: {e}")
 
 
 class RotaryEncoderKY040:
