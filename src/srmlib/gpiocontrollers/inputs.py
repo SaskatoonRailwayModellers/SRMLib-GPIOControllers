@@ -51,6 +51,8 @@ class RateLimitedPercentageInput(PercentageInput):
             initial_percent: float = 0, **kwargs
     ) -> None:
         super().__init__(*args, initial_percent=initial_percent, **kwargs)
+        self._terminated = False
+        self._desired_percent = initial_percent
 
         def percent_changed_handler(percent: float) -> None:
             self._desired_percent = percent
