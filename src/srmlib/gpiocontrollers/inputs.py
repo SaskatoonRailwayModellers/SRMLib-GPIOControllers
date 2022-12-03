@@ -79,6 +79,10 @@ class RateLimitedPercentageInput(PercentageInput):
         self._thread = Thread(target=acceleration_thread)
         self._thread.start()
 
+    def terminate(self) -> None:
+        self._terminated = True
+        self._thread.join()
+
 
 class RotaryEncoderKY040:
     """
