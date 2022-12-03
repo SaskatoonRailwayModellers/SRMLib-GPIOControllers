@@ -1,5 +1,7 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from logging import debug, error
+from threading import Thread
+from time import sleep
 from typing import List, Callable
 
 from RPi.GPIO import setmode, BOARD, input as gpio_input, add_event_detect, BOTH, setup, IN, PUD_DOWN
@@ -16,28 +18,66 @@ class PercentageInput(ABC):
     _current_percent: float
     _log_id: str
 
-    def __init__(self, *args, logging_identifier: str = None, initial_percent: float, **kwargs) -> None:
+    def __init__(self, *args, logging_identifier: str = None, initial_percent: float = 0, **kwargs) -> None:
         super(PercentageInput, self).__init__(*args, **kwargs)
         self._percent_changed_callbacks = []
         self._current_percent = initial_percent
         self._log_id = f"[{logging_identifier or f'{self.__class__.__name__}-{id(self)}'}]"
 
-    @abstractmethod
     def add_percent_changed_callback(self, callback: Callable[[float], None]) -> None:
         """
         Registers a new callback to be invoked whenever the input percentage changes.
 
         :param callback: A function that accepts the current input as a percentage [0, 100].
         """
-        pass
+        self._percent_changed_callbacks.append(callback)
 
     def _invoke_all_callbacks(self) -> None:
-        debug(f"{self._log_id} Rotary position changed, new percent is {self._current_percent}. Invoking callbacks.")
+        debug(f"{self._log_id} Input percentage changed to {self._current_percent}. Invoking callbacks.")
         for callback in self._percent_changed_callbacks:
             try:
                 callback(self._current_percent)
             except RuntimeError as e:
                 error(f"{self._log_id} Switch callback threw an exception: {e}")
+
+
+class RateLimitedPercentageInput(PercentageInput):
+    _desired_percent: float
+    _thread: Thread
+    _terminated: bool
+
+    def __init__(
+            self, percentage_input: PercentageInput, max_percent_change_per_second: float, *args,
+            initial_percent: float = 0, **kwargs
+    ) -> None:
+        super().__init__(*args, initial_percent=initial_percent, **kwargs)
+
+        def percent_changed_handler(percent: float) -> None:
+            self._desired_percent = percent
+            debug(f"{self._log_id} Desired input percentage changed to {self._current_percent}. "
+                  f"Rate-limited invocation to follow.")
+
+        percentage_input.add_percent_changed_callback(percent_changed_handler)
+
+        def acceleration_thread() -> None:
+            loop_time = 0.25
+            while not self._terminated:
+                if self._current_percent != self._desired_percent:
+                    is_within_one_step = abs(self._current_percent - self._desired_percent) < max_percent_change_per_second
+                    if is_within_one_step:
+                        self._current_percent = self._desired_percent
+                    else:
+                        sign = loop_time if self._current_percent < self._desired_percent else -loop_time
+                        self._current_percent = clamp(
+                            self._current_percent + (sign * max_percent_change_per_second),
+                            0,
+                            100
+                        )
+                    self._invoke_all_callbacks()
+                sleep(loop_time)
+
+        self._thread = Thread(target=acceleration_thread)
+        self._thread.start()
 
 
 class RotaryEncoderKY040:
@@ -131,6 +171,3 @@ class RotaryEncoderPercentageInput(PercentageInput):
             self._invoke_all_callbacks()
 
         rotary_encoder.add_rotation_callback(rotary_encoder_rotation_handler)
-
-    def add_percent_changed_callback(self, callback: Callable[[float], None]) -> None:
-        self._percent_changed_callbacks.append(callback)
