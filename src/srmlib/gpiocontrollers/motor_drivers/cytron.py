@@ -64,7 +64,7 @@ class CytronMD10C:
         :param duty_cycle: The value to set the pwm duty cycle to as a percentage [0, 100].
         :raises ValueError: Raised if the duty cycle is invalid.
         """
-        if not 0 <= duty_cycle <= 1:
+        if not 0 <= duty_cycle <= 100:
             raise ValueError(f"PWM duty cycle must be between 0 and 100 (inclusive), was {duty_cycle}")
         self._duty_cycle = duty_cycle
         if duty_cycle == 0:
@@ -89,8 +89,4 @@ class CytronMD10C:
             raise ValueError(f"Direction must be either 0 (forward) or 1 (backward), was {direction}")
         self._direction = direction
         output(self._dir_channel, direction)
-
-
-
-
 
