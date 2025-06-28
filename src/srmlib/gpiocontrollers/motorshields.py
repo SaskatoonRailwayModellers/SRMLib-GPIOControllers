@@ -81,12 +81,12 @@ class CytronMD10C(MotorShield):
         :param pulse_width_modulation_pin: The gpio pin connected to the motor shield's pwm pin.
         """
         super().__init__(*args, **kwargs)
-        if getmode() != BOARD:
-            # TODO kirypto 2022-Sep-17: Determine if it is safe to call setmode multiple times, and
-            #  do that instead if so
-            raise ValueError(
-                f"GPIO board mode must be BOARD to use the {CytronMD10C.__name__}. "
-                f"(Use PRi.GPIO.setmode to set this)")
+        #if getmode() != BOARD:
+        #    # TODO kirypto 2022-Sep-17: Determine if it is safe to call setmode multiple times, and
+        #    #  do that instead if so
+        #    raise ValueError(
+        #        f"GPIO board mode must be BOARD to use the {CytronMD10C.__name__}. "
+        #        f"(Use PRi.GPIO.setmode to set this)")
 
         setup(pulse_width_modulation_pin, OUT, initial=LOW)
         setup(direction_pin, OUT, initial=LOW)
